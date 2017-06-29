@@ -14,50 +14,32 @@ export const getRandomCard = (cards) => {
 
 const load = (name) => new Task((reject, resolve) => {
 	getInLocal(name)
-		.then(data => resolve(data))
-		.catch(e => reject(`Non-existing ${name} in local`));
+		.then(data => resolve(Either.Right(data)))
+		.catch(e => resolve(Either.Left(`Non-existing ${name} in local`)));
 });
 
-const makeNice = either =>
-			either.isRight ?
-      Task.of(either.value) :
-      Task.rejected(either.value);
-
+const getIndexOfThePack = (packs, idPackInTraning) => {
+	return getIndexThingById(packs, idPackInTraning) === -1
+		? Either.Left(`Non-existing pack with id: ${idPackInTraning}`)
+		: Either.Right(getIndexThingById(packs, idPackInTraning));
+};
 export const ask = (idPackInTraning, alarmName, periodInMinutes) => {
-	const getIndexOfThePack = (packs) => {
-		return getIndexThingById(packs, idPackInTraning) === -1
-			? Either.Left(`Non-existing pack with id:${idPackInTraning}`)
-			: Either.Right(getIndexThingById(packs, idPackInTraning));
-	};
 
-	const mappedTraning = future => future.map(packs => {
-		const elementOfTheAlarm = getElementById(idPackInTraning, packs);
-		if(elementOfTheAlarm){
-			return Either.Right({ packOnAlarm: elementOfTheAlarm, packsInTraning: packs});
-		}
-	});
+	const packInTrainWithCards = future => future
+        .chain(eitherPacks => load('packsInTraning')
+        .chain(eitherTrain => Task.of(
+          eitherPacks.chain(packState => {
+            const eitherIndexOfThePack = getIndexOfThePack(packState, idPackInTraning);
+            return eitherIndexOfThePack.chain(index => {
+              const firstPackInTrain = [{id: idPackInTraning, cards: packState[index].cards}];
+              return Either.Right(firstPackInTrain);
+            });
+            return Either.Right([]);
+          }))
+        ));
 
-	const loadTraning = mappedTraning(load('packsInTraning'));
-
-	const mappedPack = future => future.map(packs => {
-		const eitherIndex = getIndexOfThePack(packs);
-		if(eitherIndex.isRight){
-			const firstPackInTrain = [{id: idPackInTraning, cards: packs[eitherIndex.value].cards}];
-			const traning = loadTraning.chain(makeNice);
-			traning.fork(
-				() => {
-					return Either.Left('>: ');
-				},
-				(traning) => {
-					return Either.Right(traning);
-				});
-		}
-		return eitherIndex;
-	});
-
-	const a = mappedPack(load('packState'));
-	const concatenad = a.chain(makeNice);
-	concatenad.fork(console.error, (packs) => {
+	const a = packInTrainWithCards(load('packState'));
+	a.fork(console.error, (packs) => {
 		console.log('index: ', packs);
 	});
-																	 };
+};
