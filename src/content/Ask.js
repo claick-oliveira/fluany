@@ -1,14 +1,13 @@
 import { getInLocal, saveInLocal } from '../popup/store/LocalStore';
-import { getIndexThingById } from '../popup/reducers/stateManipulate';
+import { getIndexThingById, getElementById } from '../popup/reducers/stateManipulate';
 import { getRandomInt } from '../shared/helpers';
-import { dec, insert, update, assoc, propEq, reject, find } from 'ramda';
+import { dec, insert, update, assoc, propEq, reject } from 'ramda';
 import { drawElementAsk } from './ElementAsk.js';
 import Task from 'data.task';
 import Either from 'data.either';
 
 // saveInLocal('packsInTraning', [{ id: "0b1d", cards: [{ front: 'teste', back: 'teste' }] }, { id: "0b1d7938-5eff-44c8-9177-aec32230add9", cards: [{ front: 'oi', back: 'hello' }] }]);
 
-export const getElementById = (id, state) => find(propEq('id', id), state);
 export const getRandomCard = (cards) => {
 	const indexCardBeingUsed = getRandomInt(0, dec(cards.length));
 	return cards[indexCardBeingUsed];
